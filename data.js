@@ -1,6 +1,7 @@
 // Everything on the site comes from this file. Players sit on a 100 x 140 pitch:
 // y = 3 is the goal we attack, y = 137 is our goal. The ball passes from the back
-// (largest y) to the front, so put older work further back.
+// (largest y) to the front, so put older work further back. `date` is the start date
+// shown on the pitch and on the time axis beside it.
 
 window.SITE = {
   name: "Stanley Chen",
@@ -25,21 +26,21 @@ window.SITE = {
   players: [
     // Builds
     {
-      id: "flowmaximize", route: "builds", x: 78, y: 104, size: 3.3,
+      id: "flowmaximize", route: "builds", x: 78, y: 104, size: 3.3, date: "Apr 2026",
       name: "flowmaximize", kind: "Chrome extension", when: "April 2026",
       summary: "A sidebar for YouTube that flags the hard words in a video's captions and defines them as they come up.",
       stack: ["TypeScript"],
       links: [{ label: "Code", href: "https://github.com/26stanleyc/flowmaximize" }],
     },
     {
-      id: "neural-net", route: "builds", x: 44, y: 96, size: 3.3,
+      id: "neural-net", route: "builds", x: 44, y: 96, size: 3.3, date: "Aug 2026",
       name: "Neural net from scratch", short: "Neural net", kind: "Learning project", when: "August 2026",
       summary: "A configurable N-layer feed-forward network written from scratch in Java. It runs inference or trains itself with backpropagation.",
       stack: ["Java"],
       links: [{ label: "Code", href: "https://github.com/26stanleyc/Neural-Net-from-scratch" }],
     },
     {
-      id: "sage", route: "builds", x: 18, y: 84, size: 3.6,
+      id: "sage", route: "builds", x: 18, y: 84, size: 3.6, date: "Sep 2026",
       name: "Sage.ai", kind: "Carbon-aware load shifting", when: "September 2026", tag: "HackHarvard",
       summary: "When every EV fleet and data center chases the same clean hours, they use up the clean power together. Sage schedules flexible loads across companies so they stop herding.",
       facts: [
@@ -50,7 +51,7 @@ window.SITE = {
       links: [{ label: "Code", href: "https://github.com/26stanleyc/HackHarvard" }],
     },
     {
-      id: "tagteam", route: "builds", x: 64, y: 80, size: 3.8,
+      id: "tagteam", route: "builds", x: 64, y: 80, size: 3.8, date: "Oct 2026",
       name: "TagTeam", kind: "Fraud defense for agentic payments", when: "October 2026", tag: "CalHacks",
       summary: "AI agents now pay each other over x402. TagTeam checks every payment with a team of specialist agents, then attacks itself to find its own blind spots.",
       facts: [
@@ -64,7 +65,7 @@ window.SITE = {
       ],
     },
     {
-      id: "capitan", route: "builds", x: 36, y: 66, size: 3.8,
+      id: "capitan", route: "builds", x: 36, y: 66, size: 3.8, date: "Oct 2026",
       name: "Capitan", kind: "Climbing route planner", when: "October 2026 to now", tag: "In progress",
       summary: "Point your phone at a climbing wall. Capitan finds the holds, sorts them into routes by color, and plans moves sized to your height and wingspan.",
       facts: [
@@ -76,7 +77,7 @@ window.SITE = {
       links: [{ label: "Code", href: "https://github.com/26stanleyc/MDB-newbie" }],
     },
     {
-      id: "memorylens", route: "builds", x: 24, y: 44, size: 3.4,
+      id: "memorylens", route: "builds", x: 24, y: 44, size: 3.4, date: "Nov 2026",
       name: "MemoryLens", kind: "GPU memory tier calculator", when: "November 2026",
       summary: "Estimates what adding an X-Mem memory tier to one inference serving pool is worth per year, including cost per million tokens and the break-even fee per GPU-hour.",
       stack: ["HTML", "JavaScript"],
@@ -86,7 +87,7 @@ window.SITE = {
       ],
     },
     {
-      id: "pilego", route: "builds", x: 58, y: 32, size: 4.2,
+      id: "pilego", route: "builds", x: 58, y: 32, size: 4.2, date: "Nov 2026",
       name: "PileGo!", kind: "AI cross-listing for clothing resellers", when: "November 2026", tag: "1st place",
       summary: "Resellers list an item once. PileGo posts it to four marketplaces and pulls it down everywhere else the moment it sells.",
       facts: [
@@ -100,7 +101,7 @@ window.SITE = {
 
     // Research
     {
-      id: "graphormer", route: "research", x: 60, y: 118, size: 3.8,
+      id: "graphormer", route: "research", x: 60, y: 118, size: 3.8, date: "2023",
       name: "Graphormer++", kind: "Paper, IEEE FMLDS 2024", when: "2023 to 2024", tag: "Published",
       title: "Developing a Novel 3D Graphormer++ Model for Screening and Predicting Potential Oxide Electrocatalysts with Greater Accuracy and Computational Efficiency",
       summary: "A 3D graph transformer that screens oxide electrocatalysts without running a full simulation for each one.",
@@ -116,7 +117,7 @@ window.SITE = {
       ],
     },
     {
-      id: "3mnet", route: "research", x: 30, y: 110, size: 3.8,
+      id: "3mnet", route: "research", x: 30, y: 110, size: 3.8, date: "2024",
       name: "3MNet", kind: "Paper, AAIML 2026", when: "2024 to 2025", tag: "Published",
       title: "3MNet: A novel multi-omics deep ensemble model for melanoma survival analysis",
       summary: "Predicts survival for melanoma patients by combining RNA-seq, miRNA and mutation data.",
@@ -132,7 +133,7 @@ window.SITE = {
       ],
     },
     {
-      id: "fur", route: "research", x: 80, y: 58, size: 4,
+      id: "fur", route: "research", x: 80, y: 58, size: 4, date: "Oct 2026",
       name: "Hearing touch through fur", short: "Fur touch", kind: "Embodied Dexterity Group, BAIR", when: "October 2026 to now", tag: "In progress",
       summary: "Working out where something touches a furry surface from sound alone, using a 16-microphone array under the fur.",
       facts: [

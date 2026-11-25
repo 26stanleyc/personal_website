@@ -68,13 +68,33 @@
   for (const x of [X0, X1]) for (const y of [Y0, Y1]) el("circle", { cx: x, cy: y, r: 1.5 }, lines);
   el("rect", { x: CX - 5, y: Y1, width: 10, height: 2.4, fill: "url(#net)", class: "goal-frame" }, board);
 
+  // Time axis down the right side: a tick for every project, the year wherever it changes,
+  // and "Today" level with the goal.
+  {
+    const AX = 101.5;
+    const axis = el("g", { class: "axis", "aria-hidden": "true" }, board);
+    const oldest = chain[1];
+    el("line", { x1: AX, y1: oldest.y + 2, x2: AX, y2: 5.2 }, axis);
+    el("path", { d: `M${AX - 1.3},6.6 L${AX},4 L${AX + 1.3},6.6 Z`, class: "axis-head" }, axis);
+    // Label the year when it changes, otherwise the month when it changes.
+    let lastYear = null, lastDate = null;
+    for (const p of chain.slice(1, -1)) {
+      el("line", { x1: AX - 1.2, y1: p.y, x2: AX + 1.2, y2: p.y }, axis);
+      const year = p.date.slice(-4);
+      const text = year !== lastYear ? year : p.date !== lastDate ? p.date.slice(0, 3) : null;
+      if (text) el("text", { x: AX + 2.4, y: p.y + 1, class: year !== lastYear ? "axis-year" : "axis-month" }, axis).textContent = text;
+      lastYear = year;
+      lastDate = p.date;
+    }
+    el("text", { x: AX + 2.4, y: 5.6, class: "axis-today" }, axis).textContent = "Today";
+  }
+
   const trail = el("path", { class: "trail", "aria-hidden": "true" }, board);
   const people = el("g", { class: "players" }, board);
 
   // The goal we attack doubles as a contact link.
   {
-    const g = el("g", { class: "player goal", "data-id": "goal", tabindex: 0, role: "button", "aria-label": "Today: what I'm working on now, and how to reach me" }, people);
-    el("rect", { x: CX - 5, y: 0.4, width: 10, height: 2.6, fill: "url(#net)", class: "goal-frame" }, g);
+    const g = el("g", { class: "player goal", "data-id": "goal", tabindex: 0, role: "button", "aria-label": "Today: what I'm working on now, and how to reach me" }, people);    el("rect", { x: CX - 5, y: 0.4, width: 10, height: 2.6, fill: "url(#net)", class: "goal-frame" }, g);
     el("rect", { x: CX - 9, y: -1, width: 18, height: 11, class: "hit" }, g);
     el("text", { x: CX, y: 7.6, class: "name" }, g).textContent = "Today";
     S.goal.node = g;
@@ -89,6 +109,7 @@
     el("circle", { cx: p.x - p.size * 0.3, cy: p.y - p.size * 0.32, r: p.size * 0.34, class: "sheen" }, g);
     el("circle", { cx: p.x, cy: p.y, r: p.size + 1.2, class: "ring" }, g);
     el("text", { x: p.x, y: p.y + p.size + 3.8, class: "name" }, g).textContent = p.short || p.name;
+    if (p.date) el("text", { x: p.x, y: p.y + p.size + 6.8, class: "date" }, g).textContent = p.date;
     p.node = g;
   }
 
