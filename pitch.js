@@ -1,0 +1,273 @@
+(() => {
+  const S = window.SITE;
+  const NS = "http://www.w3.org/2000/svg";
+  const board = document.getElementById("pitch");
+  const panel = document.getElementById("panel");
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const routeById = Object.fromEntries(S.routes.map((r) => [r.id, r]));
+  const onPitch = S.players.filter((p) => p.route !== "code");
+  const byId = Object.fromEntries([S.keeper, S.goal, ...S.players].map((p) => [p.id, p]));
+  // The ball's run: from the keeper, through every project oldest to newest, into the net.
+  const chain = [S.keeper, ...[...onPitch].sort((a, b) => b.y - a.y), S.goal];
+
+  let selected = null;
+  let ballAt = { x: S.keeper.x, y: S.keeper.y };
+  let anim = 0;
+
+  // ---------- helpers ----------
+  const f = (n) => n.toFixed(2);
+
+  function el(tag, attrs = {}, parent) {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    if (parent) parent.appendChild(node);
+    return node;
+  }
+
+  function html(tag, attrs = {}, text) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function swatch(color) {
+    const s = html("span", { class: "swatch" });
+    s.style.background = color;
+    return s;
+  }
+
+  // ---------- draw the pitch ----------
+  const defs = el("defs", {}, board);
+  const net = el("pattern", { id: "net", width: 1.2, height: 1.2, patternUnits: "userSpaceOnUse" }, defs);
+  el("path", { d: "M0,0L1.2,1.2M1.2,0L0,1.2", class: "net-line" }, net);
+
+  const X0 = 3, X1 = 97, Y0 = 3, Y1 = 137, CX = 50;
+  for (let i = 0; i < 10; i++) {
+    const h = (Y1 - Y0) / 10;
+    el("rect", { x: X0, y: Y0 + i * h, width: X1 - X0, height: h + 0.05, class: i % 2 ? "grass-b" : "grass-a" }, board);
+  }
+  const lines = el("g", { class: "lines" }, board);
+  el("rect", { x: X0, y: Y0, width: X1 - X0, height: Y1 - Y0 }, lines);
+  el("line", { x1: X0, y1: 70, x2: X1, y2: 70 }, lines);
+  el("circle", { cx: CX, cy: 70, r: 12.5 }, lines);
+  el("circle", { cx: CX, cy: 70, r: 0.5, class: "spot" }, lines);
+  for (const [edge, dir] of [[Y0, 1], [Y1, -1]]) {
+    const box = (half, depth) => el("rect", { x: CX - half, y: dir > 0 ? edge : edge - depth, width: half * 2, height: depth }, lines);
+    box(27.9, 21);
+    box(12.7, 7);
+    el("circle", { cx: CX, cy: edge + dir * 14, r: 0.5, class: "spot" }, lines);
+    const ay = edge + dir * 21;
+    el("path", { d: `M${CX - 10.36},${ay} A12.5,12.5 0 0 ${dir > 0 ? 0 : 1} ${CX + 10.36},${ay}` }, lines);
+  }
+  // Corner arcs: full circles clipped to the pitch.
+  const clip = el("clipPath", { id: "pitch-clip" }, defs);
+  el("rect", { x: X0 - 0.4, y: Y0 - 0.4, width: X1 - X0 + 0.8, height: Y1 - Y0 + 0.8 }, clip);
+  lines.setAttribute("clip-path", "url(#pitch-clip)");
+  for (const x of [X0, X1]) for (const y of [Y0, Y1]) el("circle", { cx: x, cy: y, r: 1.5 }, lines);
+  el("rect", { x: CX - 5, y: Y1, width: 10, height: 2.4, fill: "url(#net)", class: "goal-frame" }, board);
+
+  const trail = el("path", { class: "trail", "aria-hidden": "true" }, board);
+  const people = el("g", { class: "players" }, board);
+
+  // The goal we attack doubles as a contact link.
+  {
+    const g = el("g", { class: "player goal", "data-id": "goal", tabindex: 0, role: "button", "aria-label": "Today: what I'm working on now, and how to reach me" }, people);
+    el("rect", { x: CX - 5, y: 0.4, width: 10, height: 2.6, fill: "url(#net)", class: "goal-frame" }, g);
+    el("rect", { x: CX - 9, y: -1, width: 18, height: 11, class: "hit" }, g);
+    el("text", { x: CX, y: 7.6, class: "name" }, g).textContent = "Today";
+    S.goal.node = g;
+  }
+
+  for (const p of [S.keeper, ...onPitch]) {
+    const kit = p === S.keeper ? "var(--keeper)" : routeById[p.route].color;
+    const g = el("g", { class: "player", "data-id": p.id, tabindex: 0, role: "button", "aria-label": `${p.name}, ${p.kind}` }, people);
+    el("circle", { cx: p.x, cy: p.y, r: p.size + 2.4, class: "hit" }, g);
+    el("circle", { cx: p.x + 0.45, cy: p.y + 0.6, r: p.size, class: "shadow" }, g);
+    el("circle", { cx: p.x, cy: p.y, r: p.size, fill: kit, class: "body" }, g);
+    el("circle", { cx: p.x - p.size * 0.3, cy: p.y - p.size * 0.32, r: p.size * 0.34, class: "sheen" }, g);
+    el("circle", { cx: p.x, cy: p.y, r: p.size + 1.2, class: "ring" }, g);
+    el("text", { x: p.x, y: p.y + p.size + 3.8, class: "name" }, g).textContent = p.short || p.name;
+    p.node = g;
+  }
+
+  const ball = el("g", { class: "ball", "aria-hidden": "true" }, board);
+  el("circle", { r: 1.5, class: "ball-body" }, ball);
+  el("path", { d: "M-0.5,-0.6L0.5,-0.6L0.8,0.3L0,0.9L-0.8,0.3Z", class: "ball-patch" }, ball);
+
+  // ---------- the ball ----------
+  function placeBall(p) {
+    ballAt = { x: p.x, y: p.y };
+    ball.setAttribute("transform", `translate(${f(p.x)},${f(p.y)})`);
+  }
+
+  // Move the ball along a list of points; draw the trail behind it if asked.
+  function run(points, duration, { drawTrail = false, onDone } = {}) {
+    cancelAnimationFrame(anim);
+    const segs = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
+    const total = segs.reduce((s, x) => s + x, 0);
+    const trailTo = (i, tip) =>
+      points.slice(0, i + 1).map((p, k) => `${k ? "L" : "M"}${f(p.x)},${f(p.y)}`).join("") + (tip ? `L${f(tip.x)},${f(tip.y)}` : "");
+    const end = () => {
+      if (drawTrail) trail.setAttribute("d", trailTo(points.length - 1));
+      placeBall(points[points.length - 1]);
+      onDone?.();
+    };
+    if (reduceMotion || total === 0) { end(); return; }
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      let left = total * (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+      let i = 0;
+      while (i < segs.length - 1 && left > segs[i]) left -= segs[i++];
+      const a = points[i], b = points[i + 1], k = Math.min(1, left / segs[i]);
+      const tip = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+      if (drawTrail) trail.setAttribute("d", trailTo(i, tip));
+      placeBall(tip);
+      if (t < 1) anim = requestAnimationFrame(step);
+      else end();
+    };
+    anim = requestAnimationFrame(step);
+  }
+
+  function kickoff() {
+    run(chain, 3200, {
+      drawTrail: true,
+      onDone: () => {
+        S.goal.node.classList.remove("scored");
+        void S.goal.node.getBBox();
+        S.goal.node.classList.add("scored");
+      },
+    });
+  }
+
+  // ---------- the panel ----------
+  function linkList(links) {
+    const p = html("p", { class: "links" });
+    for (const l of links) {
+      const a = html("a", { href: l.href, class: "btn" }, l.label);
+      if (/^https?:/.test(l.href)) { a.target = "_blank"; a.rel = "noopener"; }
+      p.appendChild(a);
+    }
+    return p;
+  }
+
+  function contactLinks() {
+    const c = S.contact;
+    return linkList([
+      { label: "Email", href: `mailto:${c.email}` },
+      { label: "GitHub", href: c.github },
+      { label: "LinkedIn", href: c.linkedin },
+      { label: "Resume (PDF)", href: c.resume },
+    ]);
+  }
+
+  function backButton() {
+    const b = html("button", { type: "button", class: "back" }, "All projects");
+    b.addEventListener("click", () => showIndex({ focus: true }));
+    return b;
+  }
+
+  function showIndex({ focus = false } = {}) {
+    selected?.node.classList.remove("is-selected");
+    selected = null;
+    const nodes = [html("h2", { class: "panel-title" }, "Projects")];
+    for (const r of S.routes.filter((r) => r.id !== "code")) {
+      const h3 = html("h3", { class: "group" });
+      h3.append(swatch(r.color), document.createTextNode(r.name));
+      const ul = html("ul", { class: "index" });
+      onPitch.filter((p) => p.route === r.id).sort((a, b) => a.y - b.y).forEach((p) => {
+        const b = html("button", { type: "button", class: "row", "data-id": p.id });
+        b.append(html("span", { class: "row-name" }, p.name), html("span", { class: "row-kind" }, `${p.kind}, ${p.when}`));
+        if (p.tag) b.appendChild(html("span", { class: "row-tag" }, p.tag));
+        b.addEventListener("click", () => select(p.id, { focusPanel: true }));
+        const li = html("li", {});
+        li.appendChild(b);
+        ul.appendChild(li);
+      });
+      nodes.push(h3, ul);
+    }
+    panel.replaceChildren(...nodes);
+    panel.dataset.route = "";
+    history.replaceState(null, "", location.pathname);
+    if (focus) panel.querySelector(".row")?.focus();
+  }
+
+  function showPlayer(p) {
+    if (p === S.goal || p === S.keeper) {
+      panel.replaceChildren(
+        backButton(),
+        html("h2", {}, p === S.goal ? "Today" : "Stanley Chen"),
+        html("p", {}, p === S.goal ? S.today : S.intro),
+        ...(p === S.goal ? [html("p", {}, `The fastest way to reach me is ${S.contact.email}.`)] : []),
+        contactLinks(),
+      );
+      panel.dataset.route = "";
+      return;
+    }
+    const r = routeById[p.route];
+    const nodes = [backButton(), html("p", { class: "card-route" }, r.name), html("h2", {}, p.name)];
+    nodes.push(html("p", { class: "kind" }, `${p.kind}, ${p.when}`));
+    if (p.tag) nodes.push(html("p", { class: "tag" }, p.tag));
+    if (p.title) nodes.push(html("p", { class: "paper-title" }, p.title));
+    if (p.summary) nodes.push(html("p", {}, p.summary));
+    if (p.facts) {
+      const ul = html("ul", { class: "facts" });
+      p.facts.forEach((t) => ul.appendChild(html("li", {}, t)));
+      nodes.push(ul);
+    }
+    if (p.stack) nodes.push(html("p", { class: "stack" }, `Built with ${p.stack.join(", ")}`));
+    if (p.links.length) nodes.push(linkList(p.links));
+    panel.replaceChildren(...nodes);
+    panel.dataset.route = p.route;
+  }
+
+  function select(id, { fromPitch = false, focusPanel = false } = {}) {
+    const p = byId[id];
+    if (!p) return;
+    selected?.node.classList.remove("is-selected");
+    selected = p;
+    p.node.classList.add("is-selected");
+    trail.setAttribute("d", chain.map((q, k) => `${k ? "L" : "M"}${f(q.x)},${f(q.y)}`).join("")); // in case kickoff was cut short
+    run([ballAt, p], 450);
+    showPlayer(p);
+    history.replaceState(null, "", `#${id}`);
+    if (fromPitch && matchMedia("(max-width: 860px)").matches) {
+      panel.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    }
+    if (focusPanel) panel.querySelector(".back")?.focus();
+  }
+
+  // ---------- interaction ----------
+  const target = (e) => e.target.closest(".player");
+  people.addEventListener("click", (e) => { const g = target(e); if (g) select(g.dataset.id, { fromPitch: true }); });
+  people.addEventListener("keydown", (e) => {
+    const g = target(e);
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(g.dataset.id, { fromPitch: true }); }
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && selected) showIndex(); });
+
+  // ---------- more code + contact, below the pitch ----------
+  const code = document.getElementById("code-list");
+  [...S.players.filter((p) => p.route === "code")].reverse().forEach((p) => {
+    const li = html("li", {});
+    const a = html("a", { href: p.links[0].href, target: "_blank", rel: "noopener" }, p.name);
+    li.append(a, html("span", { class: "code-kind" }, `${p.kind}, ${p.when}`));
+    code.appendChild(li);
+  });
+  document.getElementById("contact-email").textContent = S.contact.email;
+  document.getElementById("contact-links").replaceWith(contactLinks());
+
+  // ---------- start ----------
+  document.getElementById("intro").textContent = S.intro;
+  const fromHash = byId[decodeURIComponent(location.hash.slice(1))];
+  if (fromHash) {
+    showPlayer(fromHash);
+    selected = fromHash;
+    fromHash.node.classList.add("is-selected");
+  } else {
+    showIndex();
+  }
+  kickoff();
+})();

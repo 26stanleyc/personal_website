@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stanley Chen</title>
+  <meta name="description" content="Stanley Chen, EECS at UC Berkeley. Projects, papers and code.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=Permanent+Marker&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="topnav" aria-label="Sections">
+    <a href="#panel">Projects</a>
+    <a href="#more-code">More code</a>
+    <a href="#contact">Contact</a>
+    <a href="assets/stanley-chen-resume.pdf">Resume</a>
+  </nav>
+
+  <main class="ground">
+    <header class="who">
+      <h1>Stanley Chen</h1>
+      <p id="intro"></p>
+    </header>
+
+    <section class="board-col" aria-labelledby="pitch-caption">
+      <p id="pitch-caption" class="caption">
+        Every player is a project, oldest at the back and newest up front.
+        <span class="legend"><span class="dot" style="background: var(--builds)"></span>Builds</span>
+        <span class="legend"><span class="dot" style="background: var(--research)"></span>Research</span>
+        Tap one to open it.
+      </p>
+      <div class="board-frame">
+        <svg id="pitch" viewBox="0 0 100 140" role="group" aria-label="Pitch of projects"></svg>
+      </div>
+    </section>
+
+    <article id="panel" class="panel" aria-live="polite"></article>
+  </main>
+
+  <section class="below">
+    <div id="more-code">
+      <h2>More code</h2>
+      <p class="below-lede">Every other public repo.</p>
+      <ul id="code-list" class="code-list"></ul>
+    </div>
+    <div id="contact">
+      <h2>Contact</h2>
+      <p class="below-lede" id="contact-email"></p>
+      <p id="contact-links"></p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>A static page with no frameworks. Source on <a href="https://github.com/26stanleyc/personal_website">GitHub</a>.</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="pitch.js"></script>
+</body>
+</html>
