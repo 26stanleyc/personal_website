@@ -157,11 +157,12 @@
   // appearing as the ball arrives.
   function kickoff() {
     if (reduceMotion) { finishKickoff(); placeBall(S.goal); return; }
-    // Unhurried: about a second per pass and a beat on each player, ~13 s in total.
-    const PAUSE = 250;
+    // Unhurried: about two-thirds of a second per pass and a beat on each player, ~9 s in total.
+    const SPEED = 1.5; // higher is faster
+    const PAUSE = 250 / SPEED;
     const legs = chain.slice(1).map((b, i) => {
       const a = chain[i];
-      return { a, b, ms: 450 + Math.hypot(b.x - a.x, b.y - a.y) * 14 };
+      return { a, b, ms: (450 + Math.hypot(b.x - a.x, b.y - a.y) * 14) / SPEED };
     });
     let leg = 0, legStart = performance.now(), reachedLeg = -1;
     const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
