@@ -123,44 +123,65 @@
     ball.setAttribute("transform", `translate(${f(p.x)},${f(p.y)})`);
   }
 
-  // Move the ball along a list of points; draw the trail behind it if asked.
-  function run(points, duration, { drawTrail = false, onDone } = {}) {
+  // A single pass from wherever the ball is to p (used when someone taps a player).
+  function passTo(p, duration) {
     cancelAnimationFrame(anim);
-    const segs = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
-    const total = segs.reduce((s, x) => s + x, 0);
-    const trailTo = (i, tip) =>
-      points.slice(0, i + 1).map((p, k) => `${k ? "L" : "M"}${f(p.x)},${f(p.y)}`).join("") + (tip ? `L${f(tip.x)},${f(tip.y)}` : "");
-    const end = () => {
-      if (drawTrail) trail.setAttribute("d", trailTo(points.length - 1));
-      placeBall(points[points.length - 1]);
-      onDone?.();
-    };
-    if (reduceMotion || total === 0) { end(); return; }
+    const a = { ...ballAt };
+    if (reduceMotion || (a.x === p.x && a.y === p.y)) { placeBall(p); return; }
     const start = performance.now();
     const step = (now) => {
       const t = Math.min(1, (now - start) / duration);
-      let left = total * (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
-      let i = 0;
-      while (i < segs.length - 1 && left > segs[i]) left -= segs[i++];
-      const a = points[i], b = points[i + 1], k = Math.min(1, left / segs[i]);
-      const tip = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
-      if (drawTrail) trail.setAttribute("d", trailTo(i, tip));
-      placeBall(tip);
+      const k = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      placeBall({ x: a.x + (p.x - a.x) * k, y: a.y + (p.y - a.y) * k });
       if (t < 1) anim = requestAnimationFrame(step);
-      else end();
     };
     anim = requestAnimationFrame(step);
   }
 
+  const trailPath = (pts) => pts.map((q, k) => `${k ? "L" : "M"}${f(q.x)},${f(q.y)}`).join("");
+
+  // Mark a player as reached: its date fades in. The goal ripples instead.
+  function reach(p) {
+    if (p !== S.goal) { p.node.classList.add("reached"); return; }
+    p.node.classList.remove("scored");
+    void p.node.getBBox();
+    p.node.classList.add("scored");
+  }
+
+  function finishKickoff() {
+    chain.forEach((p) => p.node.classList.add("reached"));
+    trail.setAttribute("d", trailPath(chain));
+  }
+
+  // The opening run: one pass at a time, a short touch on each player, the date
+  // appearing as the ball arrives.
   function kickoff() {
-    run(chain, 3200, {
-      drawTrail: true,
-      onDone: () => {
-        S.goal.node.classList.remove("scored");
-        void S.goal.node.getBBox();
-        S.goal.node.classList.add("scored");
-      },
+    if (reduceMotion) { finishKickoff(); placeBall(S.goal); return; }
+    // About 6.5 s in total: half the speed of the original single sweep.
+    const PAUSE = 110;
+    const legs = chain.slice(1).map((b, i) => {
+      const a = chain[i];
+      return { a, b, ms: 160 + Math.hypot(b.x - a.x, b.y - a.y) * 9 };
     });
+    let leg = 0, legStart = performance.now(), reachedLeg = -1;
+    const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+    reach(S.keeper);
+    const step = (now) => {
+      const { a, b, ms } = legs[leg];
+      const t = Math.min(1, (now - legStart) / ms);
+      const k = ease(t);
+      const tip = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+      trail.setAttribute("d", trailPath([...chain.slice(0, leg + 1), tip]));
+      placeBall(tip);
+      if (t === 1 && reachedLeg !== leg) { reach(b); reachedLeg = leg; }
+      if (now - legStart >= ms + PAUSE) {
+        if (leg === legs.length - 1) return;
+        leg += 1;
+        legStart = now;
+      }
+      anim = requestAnimationFrame(step);
+    };
+    anim = requestAnimationFrame(step);
   }
 
   // ---------- the panel ----------
@@ -250,8 +271,8 @@
     selected?.node.classList.remove("is-selected");
     selected = p;
     p.node.classList.add("is-selected");
-    trail.setAttribute("d", chain.map((q, k) => `${k ? "L" : "M"}${f(q.x)},${f(q.y)}`).join("")); // in case kickoff was cut short
-    run([ballAt, p], 450);
+    finishKickoff(); // in case the opening run was cut short
+    passTo(p, 600);
     showPlayer(p);
     history.replaceState(null, "", `#${id}`);
     if (fromPitch && matchMedia("(max-width: 860px)").matches) {
