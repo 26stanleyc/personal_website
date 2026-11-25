@@ -157,11 +157,11 @@
   // appearing as the ball arrives.
   function kickoff() {
     if (reduceMotion) { finishKickoff(); placeBall(S.goal); return; }
-    // About 6.5 s in total: half the speed of the original single sweep.
-    const PAUSE = 110;
+    // Unhurried: about a second per pass and a beat on each player, ~13 s in total.
+    const PAUSE = 250;
     const legs = chain.slice(1).map((b, i) => {
       const a = chain[i];
-      return { a, b, ms: 160 + Math.hypot(b.x - a.x, b.y - a.y) * 9 };
+      return { a, b, ms: 450 + Math.hypot(b.x - a.x, b.y - a.y) * 14 };
     });
     let leg = 0, legStart = performance.now(), reachedLeg = -1;
     const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
