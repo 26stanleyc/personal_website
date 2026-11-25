@@ -157,8 +157,8 @@
   // appearing as the ball arrives.
   function kickoff() {
     if (reduceMotion) { finishKickoff(); placeBall(S.goal); return; }
-    // Unhurried: about two-thirds of a second per pass and a beat on each player, ~9 s in total.
-    const SPEED = 1.5; // higher is faster
+    // About 5 s from the keeper to Today: a short pass and a beat on each player.
+    const SPEED = 2.6; // higher is faster
     const PAUSE = 250 / SPEED;
     const legs = chain.slice(1).map((b, i) => {
       const a = chain[i];
